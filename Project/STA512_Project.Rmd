@@ -1,0 +1,143 @@
+---
+title: "Final_Project"
+author: "Chimdi, Chisom and Oyefunmi"
+date: "6/3/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(leaps)
+library(Sleuth3)
+library(ggplot2)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+df<- read.csv("/Users/chikezic/Desktop/OSU/2023/ST512/Project/ST512_Project_data.csv")
+head(df)
+#View(df)
+```
+```{r}
+#df$Country <- NULL
+df$percentage.expenditure <- NULL
+
+# Converting character columns to factor
+for (i in seq_along(df)) {
+  if (is.character(df[[i]])) {
+    df[[i]] <- as.factor(df[[i]])
+  }
+}
+df <- df[, c("Life.expectancy", setdiff(names(df), "Life.expectancy"))]
+
+df$HIV.AIDS <- as.factor(df$HIV.AIDS)
+
+head(df)
+```
+
+
+```{r}
+is_numeric <- sapply(df, is.numeric)
+# Get the names of numeric columns
+numeric_cols <- names(df)[is_numeric]
+
+for(col in numeric_cols){
+  # calculate the mean of the column excluding 0s and NAs
+  mean_col <- mean(df[[col]][df[[col]] != 0 & !is.na(df[[col]])], na.rm = TRUE)
+
+  # replace 0s and NAs in the column with the calculated mean
+  df[[col]][df[[col]] == 0 | is.na(df[[col]])] <- mean_col
+}
+head(df)
+```
+
+```{r}
+#print(names(df))
+```
+
+```{r}
+life_mod <- lm(Life.expectancy ~ ., data = df)
+summary(life_mod)
+plot(life_mod)
+#View(df)
+```
+
+```{r}
+all_mod <- regsubsets(Life.expectancy ~ (.^2), data = df, nbest = 3, method = "forward")
+summary(all_mod)
+plot(all_mod)
+```
+
+
+```{r}
+backward <- regsubsets(Life.expectancy ~ (.^2), 
+  data = df, nbest = 3, method = "backward")
+summary(backward)
+plot(backward)
+```
+
+```{r}
+print(backward)
+```
+
+
+```{r}
+life_mod2 <- lm(Life.expectancy ~ (.^2), data = df)
+anova(life_mod, life_mod2)
+```
+
+```{r}
+anova(life_mod, life_mod2)
+```
+
+```{r}
+# Run initial full model
+full_model <- lm(Life.expectancy ~ ., data = df)
+
+# Set a cutoff for the p-value
+p_cutoff <- 0.05
+
+# Repeat the procedure until all p-values are below the cutoff
+repeat {
+  # Get summary of the full model
+  summary_model <- summary(full_model)
+  
+  # Get the p-values of the coefficients
+  p_values <- summary_model$coefficients[, 4]
+  
+  # Find the variable with the highest p-value
+  worst_var <- names(which.max(p_values[-1])) # -1 to exclude intercept
+  
+  # Check if the worst variable's p-value is above the cutoff
+  if (p_values[worst_var] > p_cutoff) {
+    # Remove the worst variable from the model
+    full_model <- update(full_model, as.formula(paste("~ . -", worst_var)))
+  } else {
+    # If all p-values are below the cutoff, stop the procedure
+    break
+  }
+}
+
+# Print the final model
+summary(full_model)
+
+```
+
+
+```{r}
+res <- residuals(life_mod)
+fit <- fitted(life_mod)
+plot(fit, res)
+abline(0, 0, lty=2)
+
+#Overlay the row number of observations
+plot(fit, res, cex=0)
+abline(0, 0, lty=2)
+text(fit, res)
+```

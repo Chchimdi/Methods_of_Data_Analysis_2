@@ -1,0 +1,144 @@
+---
+title: "Homework 4"
+author: "Chimdi"
+date: "5/3/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(Sleuth3)
+library(Sleuth3)
+library(ggplot2)
+library(Rmisc)
+library(graphics)
+```
+
+
+# Problem 1: Data taken from Exercise 11.27
+Air Pollution and Mortality. Does pollution kill people? Data in one early study designed to explore this issue came from five Standard Metropolitan Statistical Areas (SMSA) in the United States, obtained for the years 1959–1961. (Data from G. C. McDonald and J. A. Ayers, “Some Applications of the ‘Chernoff Faces’: A Technique for Graphically Representing Multivariate Data”, in Graphical Representation of Multivariate Data, New York: Academic Press, 1978.) Total age-adjusted mortality from all causes, in deaths per 100,000 population, is the response variable. The explanatory variables include mean annual precipitation (in inches); median number of school years completed, for persons of age 25 years or older; percentage of 1960 population that is nonwhite; relative pollution potential of oxides of nitrogen, NOX ; and relative pollution potential of sulfur dioxide, SO2. (Note: Two cities–Lancaster and York–are heavily populated by members of the Amish religion, who prefer to teach their children at home. The lower years of education for these two cities do not indicate a social climate similar to other cities with similar years of education.)
+
+```{r}
+Data <- ex1123
+```
+
+(a) Give two figures containing the scatterplot of Mortality vs. NOX and Mortality vs. SO2. Comment on the scatterplots (does it look like there is a linear relationship? are there outliers?).
+
+```{r}
+p1 <- ggplot(Data, aes(NOX, Mort)) + geom_point() + ggtitle('NOX, Mort')
+p2 <- ggplot(Data, aes(SO2, Mort)) + geom_point() + ggtitle('SO2, Mort')
+multiplot(p1, p2, cols=2)
+```
+There seems to be violation of the linear relationship because there is no straight line pattern between the observations, especially in the second plot.
+
+There are 2 distinct outliers in the first plot and not so distinct ones in the second plot.
+
+b) Fit the linear regression model of mean mortality against the explanatory variables: Precipitation, Education, Non-white population percent and SO2. What are R2 and adjusted-R2 values?
+Fit the linear regression model of mean mortality against the explanatory variables: Precipitation, Education, Non-white population percent, NOX and SO2. How do the value of R2 and adjusted-R2 change? What conclusion can you draw?
+
+```{r}
+lin_mod1 <- lm(Mort ~ Precip + Educ + NonWhite + SO2, data = Data)
+summary(lin_mod1)
+```
+R-squared:  0.6659,	Adjusted R-squared:  0.6416
+
+```{r}
+lin_mod2 <- lm(Mort ~ Precip + Educ + NonWhite + NOX + SO2, data = Data)
+summary(lin_mod2)
+```
+R-squared:  0.6698,	Adjusted R-squared:  0.6392 
+
+There is a slight increase in R-squared and a slight decrease in Adjusted R-squared. This means that the addition NOX to the regression model has not improved the model's ability to explain the variance in the dependent variable (total age-adjusted mortality from all causes).
+
+(c) Fit the linear regression model of mean mortality against the explanatory variables: Precipitation, Education, Non-white population percent, NOX and SO2. Plot the residual plot for fitted vs. residual values. What conclusions can you draw from the plot? (look for evidence of violations of the model assumptions, identify unusual observations)
+```{r}
+res <- residuals(lin_mod2)
+fit <- fitted(lin_mod2)
+plot(fit, res)
+abline(0, 0, lty=2)
+
+#Overlay the row number of observations
+plot(fit, res, cex=0)
+abline(0, 0, lty=2)
+text(fit, res)
+```
+The conclusion is that the observations have a fairly equal variance and there are no unusual observations as the points are close to each other.
+The observations are roughly Normaly distributed as they as they are almost evenly lying on the straight horizontal line.
+
+(d) Fit the linear regression model of mean mortality against the explanatory variables: Precipitation, Education, Non-white population percent, log(NOX) and log(SO2) and the linear regression model of mean mortality against the explanatory variables: Precipitation, Education and Non-white population percent. Compare the two models using ANOVA F-test.
+
+```{r}
+lin_mod3 <- lm(Mort ~ Precip + Educ + NonWhite + log(NOX) + log(SO2), data = Data)
+summary(lin_mod3)
+```
+```{r}
+lin_mod4 <- lm(Mort ~ Precip + Educ + NonWhite, data = Data)
+summary(lin_mod4)
+```
+
+```{r}
+anova(lin_mod3, lin_mod4)
+```
+
+The comparison from the Anova test indicates that the more complex model is better at explaining the variance in the dependent variable (total age-adjusted mortality from all causes).
+This is because, the p-value(0.0002106) from the Anova test is less than $\alpha = 0.05$, making the more complex model statistically significant.
+
+
+(e) Fit the linear regression model of mean mortality against the explanatory variables: Precipitation, Education, Non-white population percent, log(NOX) and log(SO2). Plot the Case Influence statistics (leverage, studentized residual and Cook’s distance) for each of the observations for the model. Are there any unusual observations?
+Use the Case Influence Statistics plot to find unusually influential (high Cook’s distance) observations. Fit the model again without the influential observations. Does the inference on coefficient parameters (whether the coefficient parameters are significantly different from zero) change?
+
+```{r}
+lin_mod5 <- lm(Mort ~ Precip + Educ + NonWhite + log(NOX) + log(SO2), data = Data)
+summary(lin_mod5)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(lin_mod5) 
+```
+From the plots, the unusual observation is 60. This is because, it has a Cooks distance > 1(the threshold to determine an unusual observation.
+
+```{r}
+Data2 <- Data[-c(60),]
+lin_mod6 <- lm(Mort ~ Precip + Educ + NonWhite + log(NOX) + log(SO2), data = Data2)
+summary(lin_mod6)
+```
+
+There is a change in the inference on coefficient parameters. $\beta_2$ was significant in the previous model but isn't the new model which is as a result of the unusual observation that was removed. This means that removing $\beta_2$ and using the simpler model would be better in explaining the variation in the independent variable.
+
+(f) Fit the linear regression model of mean mortality against the explanatory variables: Precipitation, Education, Non-white population percent, NOX and SO2. Plot the Case Influence statistics (leverage, studentized residual and Cook’s distance) for each of the observations for the model. Are there any unusual observations?
+Use the Case Influence Statistics plot to find unusually influential (high Cook’s distance) observations. Fit the model again without the influential observations. Does the inference on coefficient parameters (whether the coefficient parameters are significantly different from zero) change?
+```{r}
+lin_mod7 <- lm(Mort ~ Precip + Educ + NonWhite + NOX + SO2, data = Data)
+summary(lin_mod7)
+par(mfrow=c(2,2))
+plot(lin_mod7)
+```
+From the plots, there are no unusual observations, because no observation has a Cook's distance > 1.
+
+Therefore, we don't need to exclude any observation.
+
+(g) Construct partial residuals plots for the NOX and SO2 variables after accounting for the variables Precipitation, Education and Non-white population percent. Comment on whether the relationship between the mortality and the pollution variables seems to change after accounting for the weather and socio-economic variables (Precipitation, Education, Non-white population percent).
+
+```{r}
+p_res <- residuals(lin_mod2, type = "partial") 
+colnames(p_res) <- paste("res_", colnames(p_res), sep = "") 
+Data_res <- cbind(Data, p_res)
+
+plot1 <- ggplot(data = Data_res, aes(NOX, res_NOX)) + geom_point()
+plot2 <- ggplot(data = Data_res, aes(NOX, Mort)) + geom_point()
+plot3 <- ggplot(data = Data_res, aes(SO2, res_SO2)) + geom_point()
+plot4 <- ggplot(data = Data_res, aes(SO2, Mort)) + geom_point()
+multiplot(plot1, plot3, plot2, plot4, cols=2)
+```
+The shapes look about the same on a different scale. Therefore, there is no need for the interaction term between NOX and SO2.
+This implies that the socio-economic variables (Precipitation, Education, Non-white population percent) in the model has little impact on the relationship between pollution variables (NOX and SO2) on Mortality.
+
+(h) Looking at the data analysis you have done in part (a)-(g), write two summarizing sentences about the relationship between mortality and the pollution variables (NOX and SO2), after the effects of the weather and socioeconomic variables have been accounted for in the study.
+
+From the data analysis, between NOX and SO2, it was only SO2 that has the ability to explain the variance in the dependent variable (total age-adjusted mortality from all causes). And that the socio-economic variables (Precipitation, Education, Non-white population percent) in the model has little impact on the relationship between pollution variables (NOX and SO2) on Mortality

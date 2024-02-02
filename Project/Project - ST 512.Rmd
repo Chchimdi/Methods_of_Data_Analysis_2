@@ -1,0 +1,91 @@
+---
+title: "Final_Project"
+author: "Chimdi, Chisom and Oyefunmi"
+date: "6/3/2023"
+output: word_document
+---
+
+
+```{r}
+library(ggplot2)
+library(Rmisc)
+library(graphics)
+library(leaps)
+```
+
+```{r}
+df<- read.csv("project_anova.csv")
+head(df)
+#View(df)
+```
+
+```{r}
+# Converting character columns to factor
+for (i in seq_along(df)) {
+  if (is.character(df[[i]])) {
+    df[[i]] <- as.factor(df[[i]])
+  }
+}
+
+head(df)
+```
+
+```{r}
+table <- aggregate(Salary ~ Profession + Region, data = df, FUN = length)
+xtabs(Salary ~ Profession + Region, table)
+```
+
+The data is balanced.
+
+#Fitting the additive model for Salary of STEM employees vs their job location 
+```{r}
+fit_add <- lm(Salary ~ Profession + Region, data = df)
+summary(fit_add)
+anova(fit_add)
+```
+#Checking model assumptions
+
+```{r}
+lmod1 <- lm(Salary ~ Profession + Region, data = df)
+df2 <- fortify(lmod1, df)
+
+ggplot(data=df2, aes(.fitted, .resid)) + geom_point() + 
+  theme(axis.text = element_text(size=12), 
+axis.title = element_text(size=14, face="bold"))
+```
+
+#Checking for the better model between additive and saturated
+```{r}
+fit_sat <- lm(Salary ~ Profession * Region, data = df)
+summary(fit_sat)
+anova(fit_add, fit_sat)
+anova(fit_sat)
+```
+
+The anova output shows that the saturated model is more significant (p-value =  0.0003555)
+
+#showing the plot for additive model
+
+```{r}
+new_data <- expand.grid(
+  Profession = unique(df$Profession),
+  Region = unique(df$Region))
+new_data$pred <- predict(fit_add, newdata =new_data)
+```
+
+```{r}
+round(xtabs(pred ~ Profession + Region, new_data), 2) 
+qplot(reorder(Profession, pred), pred, data = new_data, 
+colour = Region, geom = "line", group = Region)
+```
+
+```{r}
+new_data$pred_sat <- predict(fit_sat, newdata =new_data)
+round(xtabs(pred_sat ~ Profession + Region, new_data), 2)
+qplot(reorder(Profession, pred_sat), pred_sat, data = new_data, 
+colour = Region, geom = "line", group = Region)
+```
+
+
+The plots are different, showing that the saturated model is better
+

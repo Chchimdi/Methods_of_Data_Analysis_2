@@ -1,0 +1,211 @@
+---
+title: "Chimdi_Homework6"
+author: "Chimdi Chikezie"
+date: "5/30/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(leaps)
+library(Sleuth3)
+library(ggplot2)
+```
+
+###Problem 1
+Suppose that X1, X2 and X3 are three explanatory variables in a multiple linear regression
+model with n = 28 observations. The following table shows the residual sum of squares and
+degrees of freedom for all the possible models:
+ModelVariables | SS(Residual) | df (Residual) None | 8100 | 27
+X1 | 6240 | 26
+X2 | 5980 | 26
+X3 | 6760 | 26
+X1 , X2 | 5500 | 25
+X1 , X3 | 5250 | 25
+X2 , X3 | 5750 | 25
+X1 , X2 , X3 | 5160 | 24
+
+(a)
+```{r}
+SS <- c(8100, 6240, 5980, 6760, 5500, 5250, 5750, 5160)
+dfr <- c(27, 26, 26, 26, 25, 25, 25, 24)
+p <- c(0, 1, 1, 1, 2, 2, 2, 3)
+p <- (p+1) #SinceIamusingformulasgiveninlab
+p_str <- c("None", "X1", "X2", "X3", "X1, X2", "X1, X3", "X2, X3", "X1, X2, X3")
+MSE <- SS/dfr
+MSE
+```
+
+(b)
+```{r}
+n = 28
+Cp <- (n - p)*MSE/MSE[length(MSE)] + 2*p - n
+p_str
+Cp
+```
+
+(c)
+```{r}
+BIC <- n*log(MSE) + (p+1)*log(n)
+p_str
+BIC
+```
+
+(d)
+```{r}
+AIC <- n*log(MSE) + 2*(p+1)
+p_str
+AIC
+```
+
+(e)
+```{r}
+sprintf("Smallest Cp is X1,X3 cp = %0.3f", min(Cp))
+sprintf("Smallest BIC is X2, BIC = %0.3f", min(BIC))
+sprintf("Smallest AIC is X1,X3, AIC = %0.3f", min(AIC))
+```
+
+\newpage
+###Problem 2
+```{r}
+head(ex1220)
+data1 <- ex1220
+```
+a) With total number of species (Total) as the response, based on Cp and BIC, select the five
+best fitting regression models involving all the explanatory variables except the island area
+(Area)
+```{r}
+all_mod <- regsubsets(Total ~ Elev + DistNear + DistSc + AreaNear, data = data1, 
+                  nbest = 5, method = "exhaustive")
+summary(all_mod)
+plot(all_mod)
+```
+```{r}
+summary(all_mod)$cp
+```
+Best 5 models from BIC: \newline
+1. $\beta_0$ + $\beta_1$Elev + $\beta_2$AreaNear\newline
+2. $\beta_0$ + $\beta_1$Elev + $\beta_2$DistSc + $\beta_3$AreaNear\newline
+3: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$AreaNear\newline
+4: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$DistSc + $\beta_4$AreaNear\newline
+5: $\beta_0$ + $\beta_1$Elev \newline
+
+
+```{r}
+plot(all_mod, scale = 'Cp')
+```
+Best 5 models from Cp: \newline
+1. $\beta_0$ + $\beta_1$Elev + $\beta_2$AreaNear \newline
+2. $\beta_0$ + $\beta_1$Elev + $\beta_2$DistSc + $\beta_3$AreaNear \newline
+3: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$AreaNear \newline
+4: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$DistSc + $\beta_4$AreaNear \newline
+5: $\beta_0$ + $\beta_1$Elev + $\beta_3$DistSc \newline
+
+(b) To the model with the lowest Cp, add the island area (Area) variable and obtain the p-value
+from the extra-sum-of-squares F -test due to its addition
+
+```{r}
+modwithout <- lm(Total ~ Elev + AreaNear, data = data1)
+modwith <- lm(Total ~ Elev + Area + AreaNear, data = data1)
+anova(modwithout, modwith)
+```
+
+$H_0$: Model 1 is significant
+$H_A$: Model 2 is significant
+
+The p-value (0.3226) from the extra-sum-of-squares F-test is less than $\alpha = 0.05$ which means it is not statistically significant.
+We therefore fail to reject the null hypothesis that Model 1 is significant and conclude that the simpler model fits the data better.
+
+
+(c) With total native number of species (Native) as the response, find the best fitting regression
+model based on sequential variable selection technique - forward selection and backward
+elimination involving all the explanatory variables except the island area (Area).
+
+```{r}
+foward_mod <- regsubsets(Native ~ Elev + DistNear + DistSc + AreaNear, data = data1, 
+                  nbest = 5, method = "forward")
+summary(foward_mod)
+plot(foward_mod)
+```
+Best 5 forward models from BIC: \newline
+1. $\beta_0$ + $\beta_1$Elev + $\beta_2$AreaNear \newline
+2. $\beta_0$ + $\beta_1$Elev + $\beta_2$DistSc + $\beta_3$AreaNear \newline
+3: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$AreaNear \newline
+4: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$DistSc + $\beta_4$AreaNear \newline
+5: $\beta_0$ + $\beta_1$Elev\newline
+
+```{r}
+backward_mod <- regsubsets(Native ~ Elev + DistNear + DistSc + AreaNear, data = data1, 
+                  nbest = 5, method = "backward")
+summary(backward_mod)
+plot(backward_mod)
+```
+Best 5 backward models from BIC: \newline
+1. $\beta_0$ + $\beta_1$Elev + $\beta_2$AreaNear \newline
+2. $\beta_0$ + $\beta_1$Elev + $\beta_2$DistSc + $\beta_3$AreaNear \newline
+3: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$AreaNear \newline
+4: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistNear + $\beta_3$DistSc + $\beta_4$AreaNear \newline
+5: $\beta_0$ + $\beta_1$Elev + $\beta_2$DistSc \newline
+
+(d) To the best fitting model from forward regression, add the island area (Area) variable and
+obtain the p-value from the extra-sum-of-squares F -test due to its addition
+```{r}
+modwithout2 <- lm(Native ~ Elev + AreaNear, data = data1)
+modwith2 <- lm(Native ~ Elev+ Area + AreaNear, data = data1)
+anova(modwithout2, modwith2)
+```
+$H_0$: Model 1 is significant
+$H_A$: Model 2 is significant
+
+The p-value (0.0841) from the extra-sum-of-squares F-test is less than $\alpha = 0.05$ which means it is not statistically significant.
+We therefore fail to reject the null hypothesis that Model 1 is significant and conclude that the simpler model fits the data better.
+
+\newpage
+###Problem 3
+Pollution and Mortality. Look at the description of the data set in Problem 15.18 (page
+473-474) of Sleuth. Each part carries three marks.
+(a) Fit a regression model of the number of Cases on Year, Vaccine and their interaction. Is
+there any effect of Vaccine and the interaction on Cases?
+
+```{r}
+#?ex1518
+head(ex1518)
+data3 <- ex1518
+```
+
+```{r}
+linmod3 <- lm(Cases ~ Year * Vaccine, data = data3)
+summary(linmod3)
+```
+The parameter that measures the change in mean of vaccines is $\beta_2$ which has a p-value (0.894) greater than $\alpha = 0.05$, which means it is not statistically significant and we conclude that there is no difference in mean between the yes or no. Therefore, we conclude that whether the measles vaccine had been licensed or not, it does not affect the number of measles cases.
+The parameter that measures the interaction of vaccines and year is $\beta_3$ which has a p-value (0.873) greater than $\alpha = 0.05$, which means it is not statistically significant and we conclude that the interaction term does not have an effect on the number of measles cases. 
+
+(b) Adjust the standard errors of the estimates using autocorrelation of the residuals. Do the
+p-values of the tests in part (a) change after standardization of the standard errors?
+```{r}
+linmod3 <- lm(Cases ~ Year * Vaccine, data = data3)
+pacf(residuals(linmod3))
+pacf(residuals(linmod3), plot = F)$acf[1]
+```
+```{r adjSE}
+r1 <- acf(residuals(linmod3), plot = F)$acf[2]
+SE_adj <- sqrt((1+r1)/(1-r1))*summary(linmod3)$coef[,2]
+SE_adj
+```
+
+
+Then, we can use the adjusted standard errors, to both do t-tests and construct confidence intervals.
+```{r adjSE 2}
+n <- nrow(data3)
+t_stat <- abs(summary(linmod3)$coef[,1])/SE_adj
+p_value <-2 * pt(-abs(t_stat), n-4, lower.tail = TRUE)
+summary(linmod3)$coef
+round(cbind(SE_adj, t_stat, p_value), 4)
+```
+
+Yes, the p-values changed after standardization of the standard errors but the parameters are still not statistically significant.

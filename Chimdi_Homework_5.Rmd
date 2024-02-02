@@ -1,0 +1,189 @@
+---
+title: "Chimdi_Homework_5"
+author: "Chimdi Chikezie"
+date: "5/23/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(Sleuth3)
+library(Sleuth3)
+library(ggplot2)
+library(Rmisc)
+library(graphics)
+```
+
+Problem 1: Data taken from Exercise 13.19
+Nature-Nurture. A 1989 study investigated the effect of heredity and environment on
+intelligence. From adoption registers in France, researchers selected samples of adopted children
+whose biological parents and adoptive parents came from either the very highest or the very
+lowest socio-economic status (SES) categories (based on years of education and occupation).
+The 38 selected children were given intelligence quotient (IQ) tests. The scores as well as the
+SES of biological and adoptive parents are reported in Display 13.24 of the Sleuth book. (Data
+from C. Capron and M. Duyme, “Children’s IQs and SES of Biological and Adoptive Parents
+in a Balanced Cross-fostering Study,” European Bulletin of Cognitive Psychology 11(3) (1991):
+323-48.)
+The data frame consists on 38 observations on the following 3 variables:
+SES of adoptive parents: a factor with two levels “High” and “Low”
+SES of biological parents: a factor with two levels “High” and “Low”
+IQ Score: IQ score of children
+Each question carries four marks
+
+a) Produce a two-way table of sample averages, along with row and column averages. Does
+it seem from the table that the difference in SES of biological parents affect the IQ of
+children?
+
+```{r}
+?ex1319
+#head(ex1319)
+data1 <- ex1319
+#View(data1)
+```
+```{r}
+table <- aggregate(IQ ~ Adoptive + Biological, data = data1, FUN = length)
+xtabs(IQ ~ Adoptive + Biological, table)
+```
+
+The data is unbalanced, so we cannot take the mean directly using the "xtabs" and "addmargins" functions.
+
+```{r}
+aggregate(IQ ~ Adoptive, data = data1, FUN = mean)
+```
+
+```{r}
+aggregate(IQ ~ Biological, data = data1, FUN = mean)
+```
+
+From this 2-way mean tables, it appears that children with high-SES biological parents have higher average IQ scores (114.2222	) than those with low-SES biological parents (98.0000) and same applies to children with adopted parents. 
+But to know whether this difference is statistically significant, we would need to perform a statistical test using the raw data.
+
+(b) Fit the additive model for IQ scores of children vs SES of adoptive and biological parents.
+Based on the model fit, which factors seem to have a significant effect on the scores?
+```{r}
+fit_add <- lm(IQ ~ Adoptive + Biological, data = data1)
+summary(fit_add)
+anova(fit_add)
+```
+
+Both SES of adoptive parents and of biological parents have a significant effect on intelligence.
+
+$\beta_1$ measures the difference in mean between AdoptiveLow  and Adoptivehigh. Since the p-value 
+(0.009574) associated with $\beta_1$ is less than $\alpha = 0.05$, it means that there is difference
+in the mean of AdoptiveLow  and Adoptivehigh. Therefore, we conclude that having adopted parents
+in either highest or the very lowest socio-economic status (SES) impacts a child's IQ level.
+
+$\beta_2$ measures the difference in mean between BiologicalLow  and Biologicalhigh. Since the p-value 
+(0.000793) associated with $\beta_2$ is less than $\alpha = 0.05$, it means that there is difference
+in the mean of BiologicalLow  and Biologicalhigh. Therefore, we conclude that having biological parents
+both either highest or the very lowest socio-economic status (SES) impacts a child's IQ level.
+
+c) Run an extra sum of squares F-test to compare the saturated model to the additive model.
+Is there evidence against the simpler additive model?
+```{r}
+fit_sat <- lm(IQ ~ Adoptive * Biological, data = data1)
+anova(fit_add, fit_sat)
+```
+
+$H_0:$ Model 1 is significant
+$H_A:$ Model 2 is significant
+
+The F value from the anova comparison is 0.0109 and the p-value = 0.9174 is greater than
+$\alpha = 0.05$. This means that we will fail to reject the null hypothesis that Model 1 is 
+significant and conclude that the combined effect of heredity and environment on
+intelligence does not significantly differ from what we would expect if these two factors acted independently.
+The main effects of heredity and environment still remain to be significant contributors to the variance in intelligence, indicating that both factors independently have an impact on intelligence.
+
+(d) Using the additive model, produce a plot of the estimated mean responses for different SES
+of biological and adoptive parents (like the treatment curves shown in class). Also using
+the saturated model, produce a plot of the estimated mean responses for different SES of
+biological and adoptive parents. What conclusions can you draw from the two plots?
+
+```{r}
+new_data <- expand.grid(
+  Biological = unique(data1$Biological),
+  Adoptive = unique(data1$Adoptive))
+#View(new_data)
+new_data$pred <- predict(fit_add, newdata = new_data)
+```
+
+```{r}
+round(xtabs(pred ~ Biological + Adoptive, new_data), 2) # a table
+qplot(reorder(Biological, pred), pred, data = new_data, 
+colour = Adoptive, geom = "line", group = Adoptive)
+```
+```{r}
+new_data$pred_sat <- predict(fit_sat, newdata = new_data)
+```
+
+```{r}
+round(xtabs(pred_sat ~ Biological + Adoptive, new_data), 2) # a table
+qplot(reorder(Biological, pred_sat), pred_sat, data = new_data, 
+colour = Adoptive, geom = "line", group = Adoptive)
+```
+The plots from the additive and saturated models look the same. This means that the interaction between
+the explanatory variables do not have an effect on IQ scores.
+Therefore, we use the additive model.
+
+
+Problem 2:
+Clever Hans Effect. Read the description of the experiment and dataset from Problem 19 of
+Chapter 14 of the Sleuth book. In the dataset, consider the overall success rate of each mouse
+(Success) as the response variable. Also, consider the assigned block of the students (Block)
+as one explanatory variable, and the deceitful labeling of the mouses (Treatment) as the other
+explanatory variable. For now, leave rest of the variables alone.
+Each question carries four marks.
+
+(a) Fit the additive model for Success vs Block and Treatment. Based on the model fit, does
+the deceitful labeling of the mouses (Treatment) seems to have an effect of the success rate
+of the mouse?
+```{r}
+?ex1419
+ #head(ex1419)
+ data2 <- ex1419
+ View(data2)
+```
+
+```{r}
+data2$fac.Block <- factor(data2$Block)
+
+fit_add2 <- lm(Success ~ fac.Block + Treatment, data = data2)
+summary(fit_add2)
+```
+$H_0: \beta_6 = 0$
+$H_A: \beta_6 \neq 0$
+
+Thee parameter representing treatment is $\beta_6$ which has a t-value = -4.131 and
+p-value = 0.009075 which is less than $\alpha = 0.05$. Therefore, we reject the null
+hypothesis that $\beta_6 = 0$ and conclude that the deceitful labeling of the mouses
+(Treatment)  has an effect of the success rate of the mouse. 
+
+(b) Can you fit a saturated model for Success vs Block and Treatment in this dataset? Explain.
+If you replace the explanatory variable Block with the numerical variable of amount of prior
+experience of the students (PriorExp, a numerical variable), can you fit a model with all
+possible interactions for Success vs PriorExp and Treatment for this dataset?
+If yes, based on the model fit, does the interaction effect seem to be significant?
+Note: The data set can be read in R using the following commands
+```{r}
+data2$fac.Block <- factor(data2$Block)
+
+fit_sat2 <- lm(Success ~ fac.Block * Treatment, data = data2)
+summary(fit_sat2)
+```
+We cannot fit a saturated model for Success vs Block and Treatment in this dataset because the model is over parameterised, this means that it has too many parameters relative to the amount of data available.
+
+```{r}
+fit_sat3 <- lm(Success ~ PriorExp * Treatment, data = data2)
+summary(fit_sat3)
+```
+
+Yes, we can fit a model with all possible interactions for Success vs PriorExp and Treatment for this dataset because Block has been replaced with PriorExp (numerical), thereby reducing the number of parameters in the model.
+
+From the p-value (0.89316) of $\beta_3$ (the parameter that measures the significance of the interaction term) is less than $\alpha = 0.05$.
+We conclude that the interaction interactions between PriorExp and Treatment does not have an effect on
+Success.

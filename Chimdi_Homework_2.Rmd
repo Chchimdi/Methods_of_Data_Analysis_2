@@ -1,0 +1,279 @@
+---
+title: "homework2"
+author: "Chimdi Chikezie"
+date: "4/18/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(Sleuth3)
+library(ggplot2)
+library(Rmisc)
+library(graphics)
+```
+
+```{r}
+dataset <- ex0918
+#dataset
+```
+
+```{r}
+wing <- c(dataset$Females, dataset$Males)
+sex <- factor(c(rep("Female",21), rep("Male",21)))
+cont <- c(dataset$Continent, dataset$Continent)
+lat <- c(dataset$Latitude, dataset$Latitude)
+## The new re-arranged dataset
+new_data <- data.frame(Wing = wing,
+                       Sex = sex,
+                       Continent = cont,
+                       Latitude = lat)
+#new_data
+```
+
+## Question 2 (Problem 9.18 in the textbook)
+Speed of Evolution. How fast can evolution occur in nature? Are evolutionary trajectories
+predictable or idiosyncratic? To answer these questions R. B. Huey et al. (“Rapid Evolution
+of a Geographic Cline in Size in an Introduced Fly,” Science 287 (2000): 308-9) studied the
+development of a fly - Drosophila subobscura - that had accidentally been introduced from the
+Old World into North America (NA) around 1980. In Europe (EU), characteristics of the flies
+wings follow a “cline” - a steady change with latitude. One decade after introduction, the NA
+population had spread throughout the continent, but no such cline could be found. After two
+decades, Huey and his team collected flies from 11 locations in western NA and native flies from
+10 locations in EU at latitudes ranging from 35-55 degrees N. They maintained all samples in
+uniform conditions through several generations to isolate genetic differences from environmental
+differences. Then they measured about 20 adults from each group. The data contains average
+wing size in millimeters on a logarithmic scale, and average ratios of basal lengths to wing
+size.
+
+(a) (4 points)
+
+Construct a scatter-plot of average wing size against latitude, in which the four
+groups defined by continent and sex are colored differently. Do the plots suggest that the
+wing sizes of the NA flies have evolved toward the same cline as in EU?
+
+- Answer
+
+```{r}
+qplot(Latitude, Wing, data = new_data, colour = Sex, shape = Continent) +  ggtitle('Wing vs latitude, defined by Continent and colored by sex') + 
+  geom_smooth(method='lm', se = FALSE)     
+```
+The plots suggest that the wing sizes of the NA flies have evolved toward the same cline as in EU. From the plot, the values of thr EU and NA are positive and very close to each other, thereby havinf similar values.
+
+
+(b) (5 points)
+Construct a multiple linear regression model with wing size as the response,
+with latitude as a numerical continuous explanatory variable, and with indicator variable
+on Female for sex and indicator variable for North America (NA) for continent. 
+
+-Answer
+```{r}
+#Selecting reference variables
+new_data$Sex <- relevel(new_data$Sex, ref="Male")
+new_data$Continent <- relevel(new_data$Continent, ref="EU")
+```
+
+```{r}
+'Wing vs Latitude + Sex + Continent'
+lin_modQ11 = lm(Wing ~ Latitude + Sex + Continent, data = new_data)
+summary(lin_modQ11)
+```
+
+Construct the linear regression model which will have all possible two-way and three way interactions
+between the explanatory variables. (Note, three-way interaction means product of all three
+explanatory variables in the model - there will be only one such term in this example)
+
+```{r}
+'All interactions'
+lin_modQ12 <- lm(Wing ~ Latitude * Sex * Continent, data = new_data)
+summary(lin_modQ12)
+```
+
+(i) Identify the parameter that measures the difference between the slope parameters of
+latitude corresponding to NA and EU for males.
+
+-Answer
+
+$\beta_5$
+
+(ii) Identify the parameter that measures the difference between the NA and EU slope
+difference (difference between the slope parameters of latitude) for females and that
+for males.
+
+-Answer
+
+$\beta_7$
+
+
+(iii) Identify the parameter that measures the difference between the intercepts of the
+model of NA and EU for males.
+
+-Answer
+
+$\beta_3$
+ 
+(iv) Identify the parameter that measures the difference between the NA and EU intercepts’
+difference for females and that for males.
+
+-Answer
+
+$\beta_6$
+
+(c) (3 points) Estimate the parameters of the model identified in (b).
+
+$\beta_5 = -1.7544$
+
+$\beta_7 = 2.0653$
+
+$\beta_3 = 72.9386$
+
+$\beta_6 = -89.8325$
+
+
+
+
+\newpage
+## Question 2 (Problem 9.20 in the textbook)
+Kentucky Derby. The data set contains Kentucky Derby horse race winners from 1896 to
+2011. In all those years the race was 1.25 miles in length. It is obvious that winning time and
+speed are exactly inversely related. Nevertheless, a linear regression model for yearly changes
+over winning time such as a straight line model that includes Year or a quadratic curve that
+includes Year and Year2 - might work better for one of the two response variables than the
+other. Here we will use winning time as the response variable.
+
+(a) (4 points) Fit a linear regression model for describing the mean of winning time as a
+function of Year to the data. Test the hypothesis that the slope parameter of the model
+is zero.
+
+```{r}
+dataset2 <- ex0920
+View(dataset2)
+```
+
+
+```{r}
+# Load the required library
+library(dplyr)
+
+# Define the set of characters
+characters <- c("A", "B", "C")
+
+# Use the sample() function to randomly select characters and create a dataframe
+random_characters <- data.frame(Character = sample(characters, 116, replace = TRUE))
+
+# Print the dataframe with randomly selected characters
+cat("Dataframe with randomly selected characters:\n")
+#print(random_characters)
+
+dataset2$Character <- sample(characters, nrow(dataset2), replace = TRUE)
+
+```
+
+```{r}
+'Linear Regression of Time vs Year and Track condition'
+lin_modQ22 = lm(Time ~ Year * Character, data = dataset2)
+summary(lin_modQ22)
+```
+
+-Answer
+
+```{r}
+'Linear Regression of Time vs Year'
+lin_modQ21 = lm(Time ~ Year, data = dataset2)
+summary(lin_modQ21)
+```
+
+$H_0: \beta_1 = 0$
+$H_A: \beta_1 \neq 0$
+
+We reject the null hypothesis that the slope parameter is zero the p-value(2e-16) associated to the t-test which is testing the significance of the slope parameter is less than $\alpha = 0.05$.
+Therefore, we do not have enough evidence to conclude that the slope parameter is zero.
+
+
+Fit a linear regression model for describing the mean of winning time as a function of Year and track condition (Conditions) to the data. In the fitted model, quantify the amount by which the mean winning time on fast tracks exceeds the mean on slow tracks (using the two-category variable Conditions) for a fixed Year.
+
+```{r}
+#Selecting reference variables
+dataset2$Conditions <- relevel(dataset2$Conditions, ref="Fast")
+#View(dataset2)
+```
+
+```{r}
+'Linear Regression of Time vs Year and Track condition'
+lin_modQ22 = lm(Time ~ Year + Conditions, data = dataset2)
+summary(lin_modQ22)
+```
+The amount by which the mean winning time on fast tracks exceeds the mean on slow tracks is $\beta_2 = 3.611614$
+
+
+(b) (i)
+
+Fit linear regression model for describing the mean of winning time as
+a function of Year, track condition (Conditions) and number of horses (Starters)
+considering Starters as a numerical variable.
+Is the variable corresponding to Starters related significantly to the mean winning
+time?
+
+```{r}
+'Linear Regression of Time vs Year and Track condition'
+lin_modQ23 = lm(Time ~ Year + Conditions + Starters, data = dataset2)
+summary(lin_modQ23)
+```
+The variable corresponding to Starters is $\beta_3 = 0.016357$. The p-value(0.69) associated to the t-test of this estimate is greater than $\alpha = 0.05$ which makes it not statistically significant to the mean winning time.
+
+
+(ii)
+Fit linear regression model for describing the mean of winning time as a
+function of Year, Year2, track condition (Conditions) and number of horses (Starters)
+considering Starters as a numerical variable.
+Test the hypothesis that the slope parameter of the quadratic term is zero.
+Has relationship between the variable corresponding to Starters and the mean winning
+time changed considerably from the model in b(i) with the addition of the Year2
+variable in the model?
+
+```{r}
+'Linear Regression of Time vs Year, Year2 and track condition'
+Year2 <- dataset2$Year^(2)
+lin_modQ24 = lm(Time ~ Year + Year2 + Conditions + Starters, data = dataset2)
+summary(lin_modQ24)
+```
+
+The p-value(2.21e-11) associated to the t-test of the slope parameter of the quadratic term ($\beta_3$) is less than $\alpha = 0.05$ which makes it statistically significant to the mean winning time. We reject the null hypothesis because we don't have enough evidence to conclude that the slope parameter of the quadratic term is zero.
+
+The relationship between the variable corresponding to Starters and the mean winning time has changed considerably because the p-value went from 0.69  to 0.054. Although the p-value is not yet significant, it has improved towards significance.
+
+
+(c) 
+Fit linear regression model for describing the mean of winning time as a function
+of Year, Year2, track condition (Conditions), number of horses (Starters) as numerical
+variable and the interaction between Conditions and Starters.
+In the fitted model, is there any evidence of an interactive effect of Starters and Conditions;
+that is, does the effect of number of horses on the response depend on whether the track
+was fast or slow?
+Has relationship between the variable corresponding to Starters and the mean winning
+time changed considerably from the model in b(ii) with the addition of the interaction
+term in the model?
+
+```{r}
+sprintf('Linear Regression of Time vs Year, Year2 + track condition + interaction between Conditions and Starters') 
+lin_modQ25 = lm(Time ~ Year + Year2 + Conditions + Starters + Conditions*Starters, data = dataset2)
+summary(lin_modQ25)
+```
+In the fitted model, is there any evidence of an interactive effect of Starters and Conditions;
+that is, does the effect of number of horses on the response depend on whether the track
+was fast or slow?
+
+For when the track is slow, there is no evidence of an interactive effect of Starters and Conditions. This is because, the p-value(0.2914) associated with the t-test which is testing for the significance of an interactive effect of Starters and Conditions is greater than $\alpha = 0.05$. Therefore, we fail to reject the null hypothesis that the interactive effect is = 0.
+
+For when the track is fast, there is evidence of an interactive effect of Starters and Conditions. This is because, the p-value(2.85e-11) associated with the t-test which is testing for the significance of an interactive effect of Starters and Conditions is less than $\alpha = 0.05$. Therefore, we reject the null hypothesis that the interactive effect is = 0.
+
+The relationship between the variable corresponding to Starters and the mean winning time changed considerably because its p-value moved from 0.054 to 0.0287 making it significant. This means that the Starters parameter is not equal to 0.
+
+```{r}
+
+```

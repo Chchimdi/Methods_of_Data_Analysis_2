@@ -1,0 +1,103 @@
+---
+title: "Final_Project"
+author: "Chimdi, Chisom and Oyefunmi"
+date: "6/3/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(Sleuth3)
+library(ggplot2)
+library(Rmisc)
+library(graphics)
+library(leaps)
+```
+
+The dataset is for predicting salary of workers in some parts of usa  
+https://github.com/ywchiu/rcookbook
+chapter 6
+
+```{r}
+df<- read.csv("project_anova.csv")
+head(df)
+#View(df)
+```
+```{r}
+# Converting character columns to factor
+for (i in seq_along(df)) {
+  if (is.character(df[[i]])) {
+    df[[i]] <- as.factor(df[[i]])
+  }
+}
+
+head(df)
+```
+```{r}
+table <- aggregate(Salary ~ Profession + Region, data = df, FUN = length)
+xtabs(Salary ~ Profession + Region, table)
+```
+
+The data is balanced.
+
+(b) Fitting the additive model for Salary of STEM employees vs their job location 
+Based on the model fit, which factors seem to have a significant effect on the scores?
+```{r}
+fit_add <- lm(Salary ~ Profession + Region, data = df)
+summary(fit_add)
+anova(fit_add)
+```
+
+Checking for the better model between additive and saturated
+```{r}
+fit_sat <- lm(Salary ~ Profession * Region, data = df)
+summary(fit_sat)
+anova(fit_add, fit_sat)
+```
+
+The anova output shows that the saturated model is more significant (p-value =  0.0003555)
+
+showing the plot for additive model
+```{r}
+test_value <- data.frame(Profession = "Data Scientist", Region = "Seattle")
+df$pred_add <- predict(fit_add, newdata = test_value)
+```
+
+```{r}
+round(xtabs(pred_add ~ Profession + Region, df), 2) # a table
+qplot(reorder(Profession, pred_add), pred_add, data = df, 
+colour = Region, geom = "line", group = Region)
+```
+
+```{r}
+test_value <- data.frame(Profession = "Data Scientist", Region = "Seattle")
+df$pred_sat <- predict(fit_sat, newdata = test_value)
+```
+
+showing the plot for saturated model
+
+```{r}
+round(xtabs(pred_sat ~ Profession + Region, df), 2) # a table
+qplot(reorder(Profession, pred_sat), pred_sat, data = df, 
+colour = Region, geom = "line", group = Region)
+```
+
+The plots are different, showing that the saturated model is better
+
+```{r}
+test_value <- data.frame(Profession = "Data Scientist", Region = "Seattle")
+pred_salary <- predict(fit_sat, newdata = test_value)
+sprintf("predicted salary = %f", pred_salary)
+```
+
+```{r}
+sprintf("Prediction interval")
+pred_int <-predict(fit_sat, test_value, interval ="prediction", level=0.95 )
+pred_int
+```
+

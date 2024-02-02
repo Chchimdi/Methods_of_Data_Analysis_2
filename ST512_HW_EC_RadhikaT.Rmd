@@ -1,0 +1,138 @@
+---
+title: "ST512_HW_EC_RadhikaT"
+author: "Radhika Tekade"
+date: "06-09-2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(formatR)
+knitr::opts_chunk$set(echo = TRUE, tidy = 'formatR', tidy.opts = list(blank = FALSE, width.cutoff = 80))
+library(ggplot2)
+library(Sleuth3)
+library(Rmisc)
+library(graphics)
+library(leaps)
+```
+
+\newpage
+## Problem: Fish Market Data Analysis
+## A dataset was collected on 7 different common fish species in fish market sales. The goal of this dataset was to find the relationship between the weight (Weight, response variable) of fish (in grams) and the height (Height, explanatory variable) of the fish in cm, the diagonal width (Width, explanatory variable) of the fish in cm, the vertical length (Length1, explanatory variable) of the fish in cm, the diagonal length (Length2, explanatory variable) of the fish in cm, the cross length (Length3, explanatory variable) in cm, and the type of the fish (Species, categorical variable with 7 categories). We perform linear regression analysis with this dataset with the goal of explaining the relationship between the response and the explanatory variables. The dataset is attached to the assignment.
+
+## Answer the following questions. Each part carries four points.
+
+## Note: The data set can be read in R using the following commands
+## load("Fish_Data.RData")
+## str(Data)
+# To see the data structure
+## head(Data) # To see the top few rows
+## Data # To read the full data set
+
+```{r}
+load("Fish_Data.RData")
+head(Data)
+```
+
+
+## (a) Fit the linear regression model of mean weight against all the explanatory variables, but do not include any interaction term in the model. Report the summary() output of the linear model fit. 
+## Plot the residual plot for fitted vs. residual values based on the fitted regression model. What conclusions can you draw from the plot specifically regarding the linear model assumptions? (look for evidence of violations of the model assumptions, identify unusual observations)
+## Ans:
+```{r}
+mod1 = lm(Weight ~ Length1 + Length2 + Length3 + Height + Width + Species, data = Data)
+summary(mod1)
+```
+
+```{r}
+ggplot(data = Data, aes(mod1$fit, mod1$resid)) + 
+  geom_point() + 
+  theme_linedraw() +
+  ggtitle('Residual plot for model 1') +
+  geom_hline(yintercept = 0, lty = 2, color="red") + labs(x = "fitted value", y = "residuals")
+```
+Looking at the fitted value versus residual plot, it seems like the data is not spread randomly, hence defying the linearity assumption. It also does not seem to have a equal spread suggesting defiance of constant variance assumption. There is also one major outlier at a residual value higher than 400. 
+
+## (b) Transform the response values using the cube-root transformation. You can use the following code to do the transformation 
+## Data$Weight_new <- (Data$Weight)^(1/3) 
+## Fit the linear regression model of mean transformed weight against all the explanatory variables, but do not include any interaction term in the model. Report the summary() output of the linear model fit. Plot the residual plot for fitted vs. residual values based on the fitted regression model in part (d). What conclusions can you draw from this plot and comparing this plot with the residual plot in part (b)?
+## Ans:
+```{r}
+Data$Weight_new <- (Data$Weight)^(1/3)
+mod2 = lm(Weight_new ~ Length1 + Length2 + Length3 + Height + Width + Species, data = Data)
+summary(mod2)
+```
+
+```{r}
+ggplot(data = Data, aes(mod2$fit, mod2$resid)) + 
+  geom_point() + 
+  theme_linedraw() +
+  ggtitle('Residual plot for model 1') +
+  geom_hline(yintercept = 0, lty = 2, color="red") + labs(x = "fitted value", y = "residuals")
+```
+The model seems to follow constant variance assumption now. The data also show random spread suggesting linearity assumption to be reasonable in this case. There also seem to be no major outliers in this model.
+
+## (c) Based on the transformed weight in part (b), test the hypothesis that the mean transformed weight of Smelt fish is same as the mean transformed weight of White Fish, keeping the values of all the other explanatory variables same.
+## Ans:
+```{r}
+# Smeltfish <- Data$Weight_new[Data$Species == "Smelt"]
+# Whitefish <- Data$Weight_new[Data$Species == "Whitefish"]
+# t_test_result <- t.test(Smeltfish, Whitefish)
+# print(t_test_result)
+
+
+ref_fish <- relevel(Data$Species, ref="Whitefish")
+mod3 <- lm(Weight_new ~ ref_fish, Length1, Length2, Length3, Height, Width, data = Data)
+summary(mod3)
+```
+$H_0$: mean transformed weight of Smelt fish = mean transformed weight of White fish
+\newline
+$H_A$: mean transformed weight of Smelt fish \neq mean transformed weight of White fish
+\newline
+Looking into the summary, the p-value is equal to 9.78e-05 which is far less than the acceptable threshold of 0.05. Hence, we can say that the two parameters are statistically significant and thus will have different mean transformed weight (responses).
+
+## (d) Fit the linear regression model of mean transformed weight against all the explanatory variables as well as the interaction terms between Species and Height and the interaction terms between Species and Width. Compare the model in part (b) with this model using ANOVA F-test. Which model will you choose?
+## Ans:
+```{r}
+mod4 = lm(Weight_new ~ (Length1 + Length2 + Length3 + Height + Width + Species + Species:Height + Species:Width), data = Data)
+summary(mod4)
+```
+
+```{r}
+anova(mod2, mod4)
+```
+
+Based on the anova table computed, the p-value is 0.5189 which is greater than the accepted value of 0.05. Hence, we can say that the complex model (with the interaction terms) is not statistically significant and we can prefer the simple model for our predictions.
+
+## (e) For the model in part (b), based on the anova() command output, produce the ANOVA table with just the three rows of Regression, Residual, and Total.
+## Ans:
+```{r}
+anova(mod2)
+```
+
+```{r}
+vals <- matrix(c(11, 910.14, 82.74, 146, 6.40, 0.04, 157, 916.54, 5.837), ncol = 3, byrow = TRUE)
+colnames(vals) <- c("Df", "SS", "MS")
+rownames(vals) <- c("Regression", "Residual", "Total")
+vals <- as.table(vals)
+vals
+```
+
+## (f) Based on the fitted model in part (b), find the predicted transformed weight of a Bream fish of height of 16 cm, diagonal width of 5 cm, vertical length of 25 cm, diagonal length of 30 cm, cross length of 35 cm. Also, find the 95% prediction interval of the transformed weight of this fish. If you back-transform (that is, take a cubic power), what is the 95% prediction interval of the weight of this fish?
+## Ans:
+```{r}
+new <- data.frame(Length1 = c(25), Length2 = c(30), Length3 = c(35), Height = c(16), Width = c(5), Species = c("Bream"))
+sprintf("Predicted value of transformed weight of a Bream fish is %0.3f", predict(mod2, newdata = new))
+```
+
+```{r}
+# confint(mod2, level = 0.95)
+int_95 <- predict(mod2, new, interval = "prediction", level = 0.95)
+sprintf("Prediction interval")
+int_95
+```
+
+```{r}
+sprintf("Prediction interval")
+int_95^3
+```
+
